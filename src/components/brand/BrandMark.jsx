@@ -7,14 +7,16 @@ export function BrandWordmark({ variant = "header", className = "" }) {
   const sizes = {
     header: "text-[0.8125rem] font-bold leading-none min-[400px]:text-[0.9375rem] sm:text-lg sm:font-extrabold sm:leading-tight",
     auth: "text-2xl font-extrabold leading-tight sm:text-3xl",
+    light: "text-lg font-bold leading-tight sm:text-xl",
   };
+  const isLight = variant === "light";
   return (
     <span
       className={`tracking-tight whitespace-nowrap ${sizes[variant] || sizes.header} ${className}`}
       style={fontStack}
     >
-      <span className="text-slate-900">Beyond</span>{" "}
-      <span className="text-blue-600">Workz</span>
+      <span className={isLight ? "text-white" : "text-slate-900"}>Beyond</span>{" "}
+      <span className={isLight ? "text-white/95" : "text-blue-600"}>Workz</span>
     </span>
   );
 }
