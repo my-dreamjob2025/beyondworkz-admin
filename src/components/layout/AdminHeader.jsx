@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, Search, Bell, ChevronDown, LogOut, User } from "lucide-react";
 import { BrandLogoWithWordmarkLink } from "../brand/BrandMark";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../hooks/useNotifications";
 
 function SearchField({ className = "" }) {
   return (
@@ -23,10 +24,15 @@ function SearchField({ className = "" }) {
 }
 
 export default function AdminHeader({ onMenuClick }) {
-  const { user, logout } = useAuth();
+  const { user, logout, initializing } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const menuRef = useRef(null);
+  const notificationsRef = useRef(null);
+
+  const notificationsEnabled = Boolean(user) && !initializing;
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(notificationsEnabled);
 
   const initials = useMemo(() => {
     const a = (user?.firstName?.[0] || "").toUpperCase();
@@ -47,6 +53,9 @@ export default function AdminHeader({ onMenuClick }) {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setMenuOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setShowNotifications(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -73,13 +82,64 @@ export default function AdminHeader({ onMenuClick }) {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-          <button
-            type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-          </button>
+          <div className="relative" ref={notificationsRef}>
+            <button
+              type="button"
+              className="relative flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Notifications"
+              aria-expanded={showNotifications}
+              onClick={() => setShowNotifications((o) => !o)}
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 ? (
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-orange-500" />
+              ) : null}
+            </button>
+            {showNotifications ? (
+              <div className="absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                  {notifications.length > 0 ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[#2563EB] hover:underline disabled:opacity-50"
+                      disabled={unreadCount === 0}
+                      onClick={() => markAllRead()}
+                    >
+                      Mark all as read
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400">No alerts</span>
+                  )}
+                </div>
+                <div className="max-h-[min(60vh,320px)] overflow-y-auto divide-y divide-slate-100">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-10 text-center text-sm text-slate-500">
+                      No notifications yet. New applications and system alerts will appear here in real time.
+                    </p>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        onClick={() => markRead(n.id)}
+                        className="flex w-full gap-3 px-4 py-3 text-left text-sm hover:bg-slate-50"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-slate-900">{n.title}</p>
+                          {n.message ? <p className="mt-1 text-xs text-slate-600 line-clamp-3">{n.message}</p> : null}
+                          {n.timeLabel ? <p className="mt-1 text-xs text-slate-400">{n.timeLabel}</p> : null}
+                        </div>
+                        {n.unread ? (
+                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-orange-500" aria-hidden />
+                        ) : null}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
 
           <div className="relative" ref={menuRef}>
             <button

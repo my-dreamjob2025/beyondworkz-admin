@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
 import RequireAuth from "../components/auth/RequireAuth";
 import LoginPage from "../pages/auth/LoginPage";
@@ -47,7 +47,9 @@ export default function AppRoutes() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="content" element={<ContentManagementPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

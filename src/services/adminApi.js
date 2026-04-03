@@ -24,3 +24,13 @@ export async function fetchJobSeekerById(id) {
   const { data } = await api.get(`/admin/job-seekers/${id}`);
   return data;
 }
+
+export async function fetchApplications(params = {}) {
+  const { data } = await api.get("/admin/applications", { params });
+  return data;
+}
+
+export async function fetchApplicationById(id) {
+  const { data } = await api.get(`/admin/applications/${id}`);
+  return data;
+}
