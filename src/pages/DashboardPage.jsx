@@ -20,7 +20,7 @@ const quickActions = [
   { to: "/employers", label: "Employers", sub: "Registered employer accounts", icon: Building2 },
   { to: "/job-seekers", label: "Job seekers", sub: "Registered job seeker accounts", icon: Users },
   { to: "/payments", label: "Payments", sub: "No live payment feed yet", icon: CreditCard },
-  { to: "/support-tickets", label: "Support", sub: "Ticketing not connected yet", icon: Headphones },
+  { to: "/support-tickets", label: "Support", sub: "Tickets from job seekers & employers", icon: Headphones },
 ];
 
 function formatNumber(n) {

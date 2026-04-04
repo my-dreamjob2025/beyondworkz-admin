@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import Card from "../../components/ui/Card";
-import { fetchEmployerById } from "../../services/adminApi";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { deleteEmployer, fetchEmployerById } from "../../services/adminApi";
 import { formatDate, fullName } from "../../lib/format";
 
 function Section({ title, children }) {
@@ -25,9 +26,12 @@ function Field({ label, value }) {
 
 export default function EmployerDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +64,25 @@ export default function EmployerDetailPage() {
   const hire = cp?.hiringPreferences;
   const social = cp?.companySocialMedia;
 
+  const performDelete = async () => {
+    if (!id || !data) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const res = await deleteEmployer(id);
+      if (!res.success) {
+        setError(res.message || "Could not delete.");
+        return;
+      }
+      setDeleteDialogOpen(false);
+      navigate("/employers", { replace: true });
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Could not delete.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div>
       <Link
@@ -81,9 +104,20 @@ export default function EmployerDetailPage() {
         </div>
       ) : data ? (
         <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{fullName(data.firstName, data.lastName)}</h1>
-            <p className="mt-1 text-slate-500">{data.email}</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{fullName(data.firstName, data.lastName)}</h1>
+              <p className="mt-1 text-slate-500">{data.email}</p>
+            </div>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => setDeleteDialogOpen(true)}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? "Deleting…" : "Delete user"}
+            </button>
           </div>
 
           <Card className="space-y-6">
@@ -167,6 +201,21 @@ export default function EmployerDetailPage() {
           </Card>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete employer?"
+        description={
+          data
+            ? `Permanently delete employer “${fullName(data.firstName, data.lastName)}”? Their company profile, jobs, and applications will be removed. This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={performDelete}
+        onCancel={() => !deleting && setDeleteDialogOpen(false)}
+        loading={deleting}
+      />
     </div>
   );
 }

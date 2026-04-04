@@ -15,6 +15,11 @@ export async function fetchEmployerById(id) {
   return data;
 }
 
+export async function deleteEmployer(id) {
+  const { data } = await api.delete(`/admin/employers/${id}`);
+  return data;
+}
+
 export async function fetchJobSeekers(params = {}) {
   const { data } = await api.get("/admin/job-seekers", { params });
   return data;
@@ -25,6 +30,11 @@ export async function fetchJobSeekerById(id) {
   return data;
 }
 
+export async function deleteJobSeeker(id) {
+  const { data } = await api.delete(`/admin/job-seekers/${id}`);
+  return data;
+}
+
 export async function fetchApplications(params = {}) {
   const { data } = await api.get("/admin/applications", { params });
   return data;
@@ -32,5 +42,25 @@ export async function fetchApplications(params = {}) {
 
 export async function fetchApplicationById(id) {
   const { data } = await api.get(`/admin/applications/${id}`);
+  return data;
+}
+
+export async function fetchSupportTickets(params = {}) {
+  const { data } = await api.get("/admin/support/tickets", { params });
+  return data;
+}
+
+export async function fetchSupportTicketById(ticketId) {
+  const { data } = await api.get(`/admin/support/tickets/${ticketId}`);
+  return data;
+}
+
+export async function patchSupportTicketStatus(ticketId, status) {
+  const { data } = await api.patch(`/admin/support/tickets/${ticketId}`, { status });
+  return data;
+}
+
+export async function postSupportTicketReply(ticketId, body) {
+  const { data } = await api.post(`/admin/support/tickets/${ticketId}/replies`, { body });
   return data;
 }

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, Loader2, Search } from "lucide-react";
+import { Download, Eye, Loader2, Search, Trash2 } from "lucide-react";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
-import { fetchEmployers } from "../../services/adminApi";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { deleteEmployer, fetchEmployers } from "../../services/adminApi";
 import { formatDate, fullName } from "../../lib/format";
 
 export default function EmployersPage() {
@@ -14,6 +15,8 @@ export default function EmployersPage() {
   const [debounced, setDebounced] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 350);
@@ -50,6 +53,27 @@ export default function EmployersPage() {
   }, [page, debounced]);
 
   const totalPages = Math.max(1, Math.ceil(total / 20));
+
+  const performDelete = async () => {
+    if (!confirmTarget) return;
+    const rowId = confirmTarget.id;
+    setDeletingId(rowId);
+    setError("");
+    try {
+      const data = await deleteEmployer(rowId);
+      if (!data.success) {
+        setError(data.message || "Delete failed.");
+        return;
+      }
+      setItems((prev) => prev.filter((x) => x.id !== rowId));
+      setTotal((t) => Math.max(0, t - 1));
+      setConfirmTarget(null);
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div>
@@ -94,20 +118,21 @@ export default function EmployersPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[860px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <th className="pb-3 pr-4">Contact</th>
                     <th className="pb-3 pr-4">Company</th>
                     <th className="pb-3 pr-4">Status</th>
                     <th className="pb-3 pr-4">Verified</th>
-                    <th className="pb-3">Joined</th>
+                    <th className="pb-3 pr-4">Joined</th>
+                    <th className="pb-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-slate-700">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-10 text-center text-slate-500">
+                      <td colSpan={6} className="py-10 text-center text-slate-500">
                         No employers found.
                       </td>
                     </tr>
@@ -115,9 +140,7 @@ export default function EmployersPage() {
                     items.map((row) => (
                       <tr key={row.id} className="border-b border-slate-100">
                         <td className="py-3 pr-4">
-                          <Link to={`/employers/${row.id}`} className="font-medium text-blue-600 hover:underline">
-                            {fullName(row.firstName, row.lastName)}
-                          </Link>
+                          <span className="font-medium text-slate-900">{fullName(row.firstName, row.lastName)}</span>
                           <div className="text-xs text-slate-500">{row.email}</div>
                         </td>
                         <td className="py-3 pr-4">{row.companyName || "—"}</td>
@@ -139,7 +162,32 @@ export default function EmployersPage() {
                               ? "No"
                               : "—"}
                         </td>
-                        <td className="py-3 text-slate-500">{formatDate(row.createdAt)}</td>
+                        <td className="py-3 pr-4 text-slate-500">{formatDate(row.createdAt)}</td>
+                        <td className="py-3 text-right">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            <Link
+                              to={`/employers/${row.id}`}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              View profile
+                            </Link>
+                            <button
+                              type="button"
+                              disabled={deletingId === row.id}
+                              onClick={() =>
+                                setConfirmTarget({
+                                  id: row.id,
+                                  nameLabel: fullName(row.firstName, row.lastName),
+                                })
+                              }
+                              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingId === row.id ? "…" : "Delete"}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -172,6 +220,21 @@ export default function EmployersPage() {
           </>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Delete employer?"
+        description={
+          confirmTarget
+            ? `Permanently delete employer “${confirmTarget.nameLabel}”? This removes their company profile, posted jobs, and related applications. This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={performDelete}
+        onCancel={() => setConfirmTarget(null)}
+        loading={!!confirmTarget && deletingId === confirmTarget.id}
+      />
     </div>
   );
 }

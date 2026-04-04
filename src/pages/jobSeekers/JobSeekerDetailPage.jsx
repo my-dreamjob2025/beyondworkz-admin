@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import Card from "../../components/ui/Card";
-import { fetchJobSeekerById } from "../../services/adminApi";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import { deleteJobSeeker, fetchJobSeekerById } from "../../services/adminApi";
 import { formatDate, fullName } from "../../lib/format";
 
 function Section({ title, children }) {
@@ -25,9 +26,12 @@ function Field({ label, value }) {
 
 export default function JobSeekerDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +62,25 @@ export default function JobSeekerDetailPage() {
   const wc = p?.whiteCollarDetails;
   const bc = p?.blueCollarDetails;
 
+  const performDelete = async () => {
+    if (!id || !data) return;
+    setDeleting(true);
+    setError("");
+    try {
+      const res = await deleteJobSeeker(id);
+      if (!res.success) {
+        setError(res.message || "Could not delete.");
+        return;
+      }
+      setDeleteDialogOpen(false);
+      navigate("/job-seekers", { replace: true });
+    } catch (e) {
+      setError(e.response?.data?.message || e.message || "Could not delete.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div>
       <Link
@@ -79,9 +102,20 @@ export default function JobSeekerDetailPage() {
         </div>
       ) : data ? (
         <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{fullName(data.firstName, data.lastName)}</h1>
-            <p className="mt-1 text-slate-500">{data.email}</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{fullName(data.firstName, data.lastName)}</h1>
+              <p className="mt-1 text-slate-500">{data.email}</p>
+            </div>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => setDeleteDialogOpen(true)}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleting ? "Deleting…" : "Delete user"}
+            </button>
           </div>
 
           <Card className="space-y-6">
@@ -186,6 +220,21 @@ export default function JobSeekerDetailPage() {
           </Card>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete job seeker?"
+        description={
+          data
+            ? `Permanently delete job seeker “${fullName(data.firstName, data.lastName)}”? Their profile and applications will be removed. This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={performDelete}
+        onCancel={() => !deleting && setDeleteDialogOpen(false)}
+        loading={deleting}
+      />
     </div>
   );
 }
