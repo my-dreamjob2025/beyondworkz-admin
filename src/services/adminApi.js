@@ -20,6 +20,11 @@ export async function deleteEmployer(id) {
   return data;
 }
 
+export async function patchEmployerVerification(id, body) {
+  const { data } = await api.patch(`/admin/employers/${id}/verification`, body);
+  return data;
+}
+
 export async function fetchJobSeekers(params = {}) {
   const { data } = await api.get("/admin/job-seekers", { params });
   return data;

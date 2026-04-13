@@ -124,6 +124,7 @@ export default function EmployersPage() {
                     <th className="pb-3 pr-4">Contact</th>
                     <th className="pb-3 pr-4">Company</th>
                     <th className="pb-3 pr-4">Status</th>
+                    <th className="pb-3 pr-4">Verification</th>
                     <th className="pb-3 pr-4">Verified</th>
                     <th className="pb-3 pr-4">Joined</th>
                     <th className="pb-3 text-right">Actions</th>
@@ -132,7 +133,7 @@ export default function EmployersPage() {
                 <tbody className="text-slate-700">
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-10 text-center text-slate-500">
+                      <td colSpan={7} className="py-10 text-center text-slate-500">
                         No employers found.
                       </td>
                     </tr>
@@ -154,6 +155,11 @@ export default function EmployersPage() {
                               Active
                             </span>
                           )}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-600 capitalize">
+                          {row.profileStatus
+                            ? String(row.profileStatus).replace(/_/g, " ")
+                            : "—"}
                         </td>
                         <td className="py-3 pr-4 text-slate-600">
                           {row.companyVerified === true
